@@ -22,8 +22,31 @@ if [[ -f "$MYSQL_ENV_FILE_PATH" ]]; then
 fi
 readonly MYSQL_ENV_FILE=${MYSQL_ENV_FILE:-$MYSQL_ENV_FILE_PATH}
 
+# ==================== 版本检测函数 ====================
+detect_mysql_mode() {
+  local detected="mysql8"
+  if command -v mysql >/dev/null 2>&1; then
+    local version_output major
+    version_output=$(mysql --version 2>/dev/null || true)
+    if [[ $version_output =~ Distrib[[:space:]]([0-9]+)\. ]]; then
+      major=${BASH_REMATCH[1]}
+      if (( major < 8 )); then
+        detected="mysql5"
+      fi
+    fi
+  fi
+  echo "$detected"
+}
+
 # ==================== 配置变量 ====================
-readonly MYSQL_MODE=${MYSQL_MODE:-"mysql8"}               # mysql5 或 mysql8
+MYSQL_MODE_VALUE=${MYSQL_MODE:-""}
+MYSQL_MODE_SOURCE="env"
+if [[ -z "$MYSQL_MODE_VALUE" || "$MYSQL_MODE_VALUE" == "auto" ]]; then
+  MYSQL_MODE_VALUE=$(detect_mysql_mode)
+  MYSQL_MODE_SOURCE="auto"
+fi
+MYSQL_MODE_VALUE=$(echo "$MYSQL_MODE_VALUE" | tr 'A-Z' 'a-z')
+readonly MYSQL_MODE=$MYSQL_MODE_VALUE               # mysql5 或 mysql8
 readonly MYSQL_USER=${MYSQL_USER:-"backup"}
 readonly MYSQL_PASSWORD=${MYSQL_PASSWORD:-"ChangeMe!"}
 readonly MYSQL_HOST=${MYSQL_HOST:-"127.0.0.1"}
@@ -213,7 +236,11 @@ validate_required
 keep_recent_logs
 
 log "========================================================"
-log "MySQL 备份开始，模式=$MYSQL_MODE，目标目录=$MYSQL_TARGET_DIR"
+if [[ "$MYSQL_MODE_SOURCE" == "auto" ]]; then
+  log "MySQL 备份开始，自动检测模式=$MYSQL_MODE，目标目录=$MYSQL_TARGET_DIR"
+else
+  log "MySQL 备份开始，模式=$MYSQL_MODE，目标目录=$MYSQL_TARGET_DIR"
+fi
 log "使用配置文件：$MYSQL_CONF_FILE；日志：$MYSQL_LOG_FILE"
 
 backup_type=$(select_backup_type)
