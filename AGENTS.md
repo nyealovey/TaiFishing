@@ -7,7 +7,7 @@
 Bash 脚本可通过 `bash bash/<script>.sh`（若放在子目录则写全路径，如 `bash bash/doris_backup/doris_backup_prd.sh`、`bash bash/mysql_backup/mysql_backup_unified.sh`）或赋予可执行权限后在仓库根目录直接运行，提交前执行 `shellcheck bash/<path>/<script>.sh` 之类的 lint。Python 工具用 `python3 python/<script>.py`，建议在脚本头部注明虚拟环境或依赖。PowerShell 工具用 `pwsh powershell/<script>.ps1`。需要定时任务时，请把 cron/Task Scheduler 命令写入脚本头并在 `docs/` 留存同样的运行示例。
 
 ## 编码风格与命名约定
-Bash 采用两空格缩进，默认 `set -euo pipefail` 并优先使用 POSIX 语法；Python 与 PowerShell 使用四空格缩进并遵循 `black`/PSSA 风格。文件名保持小写加下划线（例如 `backup_database.sh`），外部依赖在文件顶部用注释列出，如有需要在旁建立 `requirements.txt` 或 `.psd1`。所有脚本应为变量、函数、日志或配置名选择能体现脚本用途的统一前缀（例如 Doris 备份脚本用 `DORIS_`，MySQL 备份脚本用 `MYSQL_`，ODS 相关脚本可用 `ODS_`），以便快速识别业务域并避免命名冲突。编写注释、README、env 示例等文档时统一使用中文，确保不同贡献者能快速理解背景与操作步骤。
+Bash 采用两空格缩进，默认 `set -euo pipefail` 并优先使用 POSIX 语法；Python 与 PowerShell 使用四空格缩进并遵循 `black`/PSSA 风格。文件名保持小写加下划线（例如 `backup_database.sh`），外部依赖在文件顶部用注释列出，如有需要在旁建立 `requirements.txt` 或 `.psd1`。所有脚本应为变量、函数、日志或配置名选择能体现脚本用途的统一前缀（例如 Doris 备份脚本用 `DORIS_`，MySQL 备份脚本用 `MYSQL_`，ODS 相关脚本可用 `ODS_`），以便快速识别业务域并避免命名冲突。函数注释统一采用中文 Google 风格（包含“函数/说明/参数/返回”等行），而 README、注释、env 示例等所有文档同样使用中文，确保不同贡献者能快速理解背景与操作步骤。
 
 ## 测试指南
 Python 首选 `pytest`，PowerShell 使用 Pester，Bash 则在 README 或 docs 中提供样例输入输出与快速冒烟命令。请把复现步骤、预期结果与任意测试数据置于 `docs/fixtures/` 或脚本相邻目录，确保关键分支获得验证，并在 PR 中说明尚未覆盖的场景。
