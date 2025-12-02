@@ -7,7 +7,7 @@
 Bash 脚本可通过 `bash bash/<script>.sh`（若放在子目录则写全路径，如 `bash bash/doris_backup/doris_backup_improved.sh`）或赋予可执行权限后在仓库根目录直接运行，提交前执行 `shellcheck bash/doris_backup/<script>.sh` 之类的 lint。Python 工具用 `python3 python/<script>.py`，建议在脚本头部注明虚拟环境或依赖。PowerShell 工具用 `pwsh powershell/<script>.ps1`。需要定时任务时，请把 cron/Task Scheduler 命令写入脚本头并在 `docs/` 留存同样的运行示例。
 
 ## 编码风格与命名约定
-Bash 采用两空格缩进，默认 `set -euo pipefail` 并优先使用 POSIX 语法；Python 与 PowerShell 使用四空格缩进并遵循 `black`/PSSA 风格。文件名保持小写加下划线（例如 `backup_database.sh`），外部依赖在文件顶部用注释列出，如有需要在旁建立 `requirements.txt` 或 `.psd1`。
+Bash 采用两空格缩进，默认 `set -euo pipefail` 并优先使用 POSIX 语法；Python 与 PowerShell 使用四空格缩进并遵循 `black`/PSSA 风格。文件名保持小写加下划线（例如 `backup_database.sh`），外部依赖在文件顶部用注释列出，如有需要在旁建立 `requirements.txt` 或 `.psd1`。所有与 Doris 备份相关的变量、函数、日志或配置名必须使用 `DORIS_` 前缀（例如 `DORIS_REPO`, `DORIS_LOG_FILE`），避免与其他脚本冲突。
 
 ## 测试指南
 Python 首选 `pytest`，PowerShell 使用 Pester，Bash 则在 README 或 docs 中提供样例输入输出与快速冒烟命令。请把复现步骤、预期结果与任意测试数据置于 `docs/fixtures/` 或脚本相邻目录，确保关键分支获得验证，并在 PR 中说明尚未覆盖的场景。
