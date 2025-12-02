@@ -1,10 +1,10 @@
 # Repository Guidelines
 
 ## 项目结构与模块划分
-仓库按运行时划分目录：`bash/` 存放常用运维脚本，并在 `bash/doris_backup/` 下集中 Doris 备份脚本（如 `doris_backup_prd.sh` 与 `doris_backup_test.sh`）及其环境示例 `env.example`；`python/` 保存跨平台工具，`powershell/` 针对 Windows 自动化，长篇说明与故障手册集中在 `docs/`（例如 `docs/doris_backup_troubleshooting.md`）。新增脚本时请在对应语言目录创建文件，并在 `docs/` 内放置与脚本同名的详细指南或示例。
+仓库按运行时划分目录：`bash/` 存放常用运维脚本，其中 `bash/doris_backup/` 集中 Doris 备份脚本及 `env.example`，`bash/mysql_backup/` 提供 MySQL 5/8 通用备份脚本与 `.mysql_backup.env` 示例；`python/` 保存跨平台工具，`powershell/` 针对 Windows 自动化，长篇说明与故障手册集中在 `docs/`（例如 `docs/doris_backup_troubleshooting.md`）。新增脚本时请在对应语言目录创建文件，并在 `docs/` 内放置与脚本同名的详细指南或示例。
 
 ## 构建、测试与开发命令
-Bash 脚本可通过 `bash bash/<script>.sh`（若放在子目录则写全路径，如 `bash bash/doris_backup/doris_backup_improved.sh`）或赋予可执行权限后在仓库根目录直接运行，提交前执行 `shellcheck bash/doris_backup/<script>.sh` 之类的 lint。Python 工具用 `python3 python/<script>.py`，建议在脚本头部注明虚拟环境或依赖。PowerShell 工具用 `pwsh powershell/<script>.ps1`。需要定时任务时，请把 cron/Task Scheduler 命令写入脚本头并在 `docs/` 留存同样的运行示例。
+Bash 脚本可通过 `bash bash/<script>.sh`（若放在子目录则写全路径，如 `bash bash/doris_backup/doris_backup_prd.sh`、`bash bash/mysql_backup/mysql_backup_unified.sh`）或赋予可执行权限后在仓库根目录直接运行，提交前执行 `shellcheck bash/<path>/<script>.sh` 之类的 lint。Python 工具用 `python3 python/<script>.py`，建议在脚本头部注明虚拟环境或依赖。PowerShell 工具用 `pwsh powershell/<script>.ps1`。需要定时任务时，请把 cron/Task Scheduler 命令写入脚本头并在 `docs/` 留存同样的运行示例。
 
 ## 编码风格与命名约定
 Bash 采用两空格缩进，默认 `set -euo pipefail` 并优先使用 POSIX 语法；Python 与 PowerShell 使用四空格缩进并遵循 `black`/PSSA 风格。文件名保持小写加下划线（例如 `backup_database.sh`），外部依赖在文件顶部用注释列出，如有需要在旁建立 `requirements.txt` 或 `.psd1`。所有脚本应为变量、函数、日志或配置名选择能体现脚本用途的统一前缀（例如 Doris 备份脚本用 `DORIS_`、ODS 相关脚本可用 `ODS_`），以便快速识别业务域并避免命名冲突。
