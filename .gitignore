@@ -1,0 +1,28 @@
+# 日志文件
+*.log
+logs/
+
+# 配置文件（可能包含敏感信息）
+*.conf
+config.ini
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+*.egg-info/
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
+*~
+
+# 操作系统
+.DS_Store
+Thumbs.db
