@@ -111,13 +111,40 @@ cancel_running_backup() {
   fi
 }
 
+# -----------------------------------------------------------------------------
+# 函数: log_recent_snapshots
+# 说明: 打印当前仓库内的快照列表，用于排查 SHOW SNAPSHOT 结果
+# -----------------------------------------------------------------------------
+log_recent_snapshots() {
+  log "【调试】当前仓库所有快照："
+  if ! SNAPSHOT_LIST=$(run_mysql -N -s -e "SHOW SNAPSHOT ON \`$DORIS_REPO\`;" 2>&1); then
+    log "【调试】SHOW SNAPSHOT 查询失败：$SNAPSHOT_LIST"
+    return
+  fi
+
+  if [[ -z "$SNAPSHOT_LIST" ]]; then
+    log "  (暂无快照记录)"
+    return
+  fi
+
+  while IFS=$'\t' read -r snapshot_name timestamp status _; do
+    [[ -z "$snapshot_name" ]] && continue
+    log "  - SNAPSHOT=$snapshot_name Timestamp=$timestamp Status=$status"
+  done <<< "$SNAPSHOT_LIST"
+}
+
+
+
 # ==================== 主逻辑 ====================
 
 # 创建日志目录
 mkdir -p "$DORIS_LOG_DIR"
 
-# 获取数据库列表
-DATABASES=$(run_mysql -Nse "
+log "========================================================"
+log "Doris 改进版备份开始 $(date '+%Y-%m-%d %H:%M:%S')"
+
+# 先获取所有数据库列表
+ALL_DBS=$(run_mysql -Nse "
   SELECT SCHEMA_NAME
   FROM information_schema.SCHEMATA
   WHERE SCHEMA_NAME NOT IN (
@@ -127,17 +154,54 @@ DATABASES=$(run_mysql -Nse "
   AND SCHEMA_NAME NOT LIKE 'test_%'
   AND SCHEMA_NAME NOT LIKE 'backup_%'
   ORDER BY SCHEMA_NAME;
-")
+" || true)
 
-log "========================================================"
-log "Doris 改进版备份开始 $(date '+%Y-%m-%d %H:%M:%S')"
-log "待备份数据库：$DATABASES"
+if [[ -z "$ALL_DBS" ]]; then
+  log "【错误】未找到任何待备份的数据库"
+  exit 1
+fi
 
-# 预检查
+# 获取每个数据库的大小并排序（从小到大）
+log "正在获取数据库大小信息..."
+
+DB_SIZE_LIST=""
+for db in $ALL_DBS; do
+  # 先 USE 数据库，然后执行 SHOW DATA
+  show_data_output=$(run_mysql -e "USE \`$db\`; SHOW DATA;" 2>/dev/null || echo "")
+  
+  # 提取包含 Total 的行，获取 Size 列（第2列）
+  size=$(echo "$show_data_output" | grep -i "Total" | awk '{print $2}')
+  
+  # 如果为空，使用默认值
+  if [[ -z "$size" ]]; then
+    size="0.000"
+  fi
+  
+  DB_SIZE_LIST="${DB_SIZE_LIST}${size} ${db}\n"
+  log "  - $db: $size"
+done
+
+# 按大小从小到大排序（如果 sort -h 不支持则用 -n）
+if echo -e "$DB_SIZE_LIST" | sort -h &>/dev/null; then
+  DATABASES=$(echo -e "$DB_SIZE_LIST" | grep -v "^$" | sort -h | awk '{print $2}')
+else
+  DATABASES=$(echo -e "$DB_SIZE_LIST" | grep -v "^$" | sort -k1 -n | awk '{print $2}')
+fi
+
+if [[ -z "$DATABASES" ]]; then
+  log "【错误】数据库列表为空，无法继续"
+  exit 1
+fi
+
+log "待备份数据库（按大小从小到大）：$DATABASES"
+
+# 预检查仓库
 if ! check_repository; then
   log "【严重错误】仓库检查失败，退出备份"
   exit 1
 fi
+
+log "========================================================"
 
 # 遍历每个数据库进行备份
 for DB in $DATABASES; do
@@ -179,6 +243,9 @@ for DB in $DATABASES; do
     if [ -z "$SNAPSHOT_RESULT" ]; then
       ELAPSED_MIN=$((($(date +%s) - START_TIME)/60))
       log "【提示】仓库 [$DORIS_REPO] 尚未出现快照 [$LABEL_NAME]，已等待 ${ELAPSED_MIN} 分钟"
+      if (( ELAPSED_MIN > 0 && ELAPSED_MIN % 5 == 0 )); then
+        log_recent_snapshots
+      fi
     else
       STATUS=$(echo "$SNAPSHOT_RESULT" | awk '{print $NF}')
       TIMESTAMP=$(echo "$SNAPSHOT_RESULT" | awk '{print $(NF-1)}')
