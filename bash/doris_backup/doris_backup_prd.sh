@@ -41,6 +41,7 @@ readonly DORIS_DB_INTERVAL=${DORIS_DB_INTERVAL:-60}
 
 readonly DORIS_LOG_DIR=${DORIS_LOG_DIR:-"/home/doris/backup_logs"}
 readonly DORIS_TODAY_SUFFIX=$(date +%Y%m%d)
+readonly DORIS_TIMESTAMP_SUFFIX=$(date +%Y%m%d_%H%M)
 readonly DORIS_LOG_FILE="${DORIS_LOG_DIR}/doris_backup_${DORIS_TODAY_SUFFIX}.log"
 
 # ==================== 工具函数 ====================
@@ -143,57 +144,23 @@ mkdir -p "$DORIS_LOG_DIR"
 log "========================================================"
 log "Doris 改进版备份开始 $(date '+%Y-%m-%d %H:%M:%S')"
 
-# 先获取所有数据库列表
-ALL_DBS=$(run_mysql -Nse "
-  SELECT SCHEMA_NAME
-  FROM information_schema.SCHEMATA
-  WHERE SCHEMA_NAME NOT IN (
-    'information_schema','__internal_schema','mysql','ctl','sys'
-  )
-  AND SCHEMA_NAME NOT LIKE 'tmp_%'
-  AND SCHEMA_NAME NOT LIKE 'test_%'
-  AND SCHEMA_NAME NOT LIKE 'backup_%'
-  ORDER BY SCHEMA_NAME;
-" || true)
+# 获取数据库列表
+log "正在查询待备份数据库列表..."
+DATABASES=$(run_mysql -Nse "SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME NOT IN ('information_schema','__internal_schema','mysql','ctl','sys') AND SCHEMA_NAME NOT LIKE 'tmp_%' AND SCHEMA_NAME NOT LIKE 'test_%' AND SCHEMA_NAME NOT LIKE 'backup_%' ORDER BY SCHEMA_NAME;" 2>&1)
+QUERY_EXIT_CODE=$?
 
-if [[ -z "$ALL_DBS" ]]; then
+if [[ $QUERY_EXIT_CODE -ne 0 ]]; then
+  log "【错误】数据库查询失败，退出码：$QUERY_EXIT_CODE"
+  log "错误信息：$DATABASES"
+  exit 1
+fi
+
+if [[ -z "$DATABASES" ]]; then
   log "【错误】未找到任何待备份的数据库"
   exit 1
 fi
 
-# 获取每个数据库的大小并排序（从小到大）
-log "正在获取数据库大小信息..."
-
-DB_SIZE_LIST=""
-for db in $ALL_DBS; do
-  # 先 USE 数据库，然后执行 SHOW DATA
-  show_data_output=$(run_mysql -e "USE \`$db\`; SHOW DATA;" 2>/dev/null || echo "")
-  
-  # 提取包含 Total 的行，获取 Size 列（第2列）
-  size=$(echo "$show_data_output" | grep -i "Total" | awk '{print $2}')
-  
-  # 如果为空，使用默认值
-  if [[ -z "$size" ]]; then
-    size="0.000"
-  fi
-  
-  DB_SIZE_LIST="${DB_SIZE_LIST}${size} ${db}\n"
-  log "  - $db: $size"
-done
-
-# 按大小从小到大排序（如果 sort -h 不支持则用 -n）
-if echo -e "$DB_SIZE_LIST" | sort -h &>/dev/null; then
-  DATABASES=$(echo -e "$DB_SIZE_LIST" | grep -v "^$" | sort -h | awk '{print $2}')
-else
-  DATABASES=$(echo -e "$DB_SIZE_LIST" | grep -v "^$" | sort -k1 -n | awk '{print $2}')
-fi
-
-if [[ -z "$DATABASES" ]]; then
-  log "【错误】数据库列表为空，无法继续"
-  exit 1
-fi
-
-log "待备份数据库（按大小从小到大）：$DATABASES"
+log "待备份数据库：$DATABASES"
 
 # 预检查仓库
 if ! check_repository; then
@@ -205,7 +172,7 @@ log "========================================================"
 
 # 遍历每个数据库进行备份
 for DB in $DATABASES; do
-  LABEL_NAME="${DB}_${DORIS_TODAY_SUFFIX}"
+  LABEL_NAME="${DB}_${DORIS_TIMESTAMP_SUFFIX}"
 
   log "-------------------------------------------------------"
   log "开始备份数据库 [$DB]，Label = $LABEL_NAME"
