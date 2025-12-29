@@ -1,0 +1,15 @@
+jobs:
+  - name: "每日文件备份"
+    retention_policy:
+      type: "days"              # 可选: days / restore_points
+      value: 14                  # 保留天数或还原点数
+    synthetic_full:
+      enabled: true
+      days_of_week: ["Saturday"]
+
+  - name: "数据库周末备份"
+    retention_policy:
+      type: "restore_points"
+      value: 30
+    synthetic_full:
+      enabled: false

@@ -1,0 +1,33 @@
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "event.module": "exchange"
+          }
+        },
+        {
+          "match": {
+            "source_type": "SMTP"
+          }
+        },
+        {
+          "exists": {
+            "field": "recipient_status"
+          }
+        },
+        {
+          "regexp": {
+            "recipient_address": {
+              "case_insensitive": true,
+              "flags": "ALL",
+              "max_determinized_states": 10000,
+              "value": "LIZZHONG@chint.com|WNTIAN@chint.com|LIUCR@chint.com|CHENXUEH@chint.com|CHENJLIN@chint.com|BWcwfk@chint.com|a-cngl@chint.com"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

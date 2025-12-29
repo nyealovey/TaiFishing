@@ -1,0 +1,73 @@
+{
+  "size": 1000,
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "term": {
+            "agent.type": "filebeat"
+          }
+        },
+        {
+          "match": {
+            "event.module": "exchange"
+          }
+        },
+        {
+          "term": {
+            "event_id": "HADISCARD"
+          }
+        },
+        {
+          "term": {
+            "agent.name": "jt-mailedge-02"
+          }
+        },
+        {
+          "terms": {
+            "sender_address": [
+                "wh1.sev@chintglobal.com",
+                "wh2.sev@chintglobal.com",
+                "tender1.sev@chintglobal.com",
+                "tender2.sev@chintglobal.com",
+                "tender3.sev@chintglobal.com",
+                "tender4.sev@chintglobal.com",
+                "tender5.sev@chintglobal.com",
+                "sales1.sev@chintglobal.com",
+                "sales2.sev@chintglobal.com",
+                "project1.sev@chintglobal.com",
+                "project2.sev@chintglobal.com",
+                "project3.sev@chintglobal.com",
+                "project4.sev@chintglobal.com",
+                "project5.sev@chintglobal.com",
+                "project6.sev@chintglobal.com",
+                "project7.sev@chintglobal.com",
+                "project9.sev@chintglobal.com",
+                "project11.sev@chintglobal.com",
+                "project13.sev@chintglobal.com",
+                "plan.sev@chintglobal.com",
+                "cnc1.sev@chintglobal.com",
+                "log.sev@chintglobal.com",
+                "adm1.sev@chintglobal.com",
+                "adm2.sev@chintglobal.com",
+                "acc1.sev@chintglobal.com",
+                "Alaeddine@chintglobal.com",
+                "saleswest.kz01@chintglobal.com",
+                "Beksultan.O@chintglobal.com",
+                "KakimzhanovaN@chintglobal.com",
+                "yelubayevam@chintglobal.com"
+            ]
+          }
+        }
+      ]
+
+    }
+  },
+  "sort": [
+    {
+      "date_time": {
+        "order": "desc"
+      }
+    }
+  ]
+}
